@@ -41,7 +41,7 @@ public:
 
       return _entities.at(index);
     }
-    
+
     const auto id = static_cast<entity_type::id_type>(_entities.size());
 
     auto new_entity = entity{id, static_cast<entity_type::version_type>(0)};
@@ -50,10 +50,15 @@ public:
     return new_entity;
   }
 
-  auto destroy_entity(const entity_type& entity) {
+  auto destroy_entity(const entity_type& entity) -> void {
     auto index = static_cast<std::size_t>(entity._id());
     _free_entities.push_back(index);
     _entities.at(index)._increment_version();
+  }
+
+  auto is_valid_entity(const entity_type& entity) -> bool {
+    auto index = static_cast<std::size_t>(entity._id());
+    return index < _entities.size() && entity == _entities.at(index);
   }
 
 private:
