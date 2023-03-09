@@ -1,0 +1,18 @@
+#ifndef LIBECS_VERSION_HPP_
+#define LIBECS_VERSION_HPP_
+
+#define LIBECS_VERSION       $libecs.version.project_number$ULL
+#define LIBECS_VERSION_STR   "$libecs.version.project$"
+#define LIBECS_VERSION_ID    "$libecs.version.project_id$"
+#define LIBECS_VERSION_FULL  "$libecs.version$"
+
+#define LIBECS_VERSION_MAJOR $libecs.version.major$
+#define LIBECS_VERSION_MINOR $libecs.version.minor$
+#define LIBECS_VERSION_PATCH $libecs.version.patch$
+
+#define LIBECS_PRE_RELEASE   $libecs.version.pre_release$
+
+#define LIBECS_SNAPSHOT_SN   $libecs.version.snapshot_sn$ULL
+#define LIBECS_SNAPSHOT_ID   "$libecs.version.snapshot_id$"
+
+#endif // LIBECS_VERSION_HPP_
