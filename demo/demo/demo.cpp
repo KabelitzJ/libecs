@@ -1,41 +1,39 @@
 #include <iostream>
+#include <vector>
+#include <memory>
+#include <bitset>
+#include <functional>
+#include <algorithm>
+#include <cstring>
 
 #include <libecs/ecs.hpp>
 
-class node {
-
-public:
-
-  node(std::shared_ptr<ecs::registry> registry)
-  : _registry{registry},
-    _entity{registry->create_entity()} { }
-
-  ~node() {
-    _registry->destroy_entity(_entity);
-  }
-
-  auto operator==(const node& other) const noexcept -> bool {
-    return _entity == other._entity;
-  }
-
-private:
-
-  std::shared_ptr<ecs::registry> _registry;
-  ecs::entity _entity;
-
+struct data {
+  std::uint32_t value;
 };
 
 auto main() -> int {
-  auto registry = std::make_shared<ecs::registry>();
 
-  auto player = node{registry};
-  auto monster = node{registry};
+  auto registry = ecs::registry{};
 
-  if (player == monster) {
-    std::cout << "The player is a monster :(\n";
-  } else {
-    std::cout << "The player is not a monster :)\n";
-  }
+  auto e1 = registry.create_entity();
+  auto e2 = registry.create_entity();
+
+  std::cout << std::boolalpha << registry.has_component<data>(e1) << '\n';
+
+  registry.add_component<data>(e1, std::uint32_t{42});
+
+  std::cout << std::boolalpha << registry.has_component<data>(e1) << '\n';
+
+  auto& d1 = registry.get_component<data>(e1);
+  const auto& d2 = registry.get_component<data>(e1);
+
+  std::cout << d1.value << '\n';
+  std::cout << d2.value << '\n';
+
+  d1.value = 69;
+
+  std::cout << registry.get_component<data>(e1).value << '\n';
 
   return 0;
 }

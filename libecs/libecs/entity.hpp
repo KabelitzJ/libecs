@@ -4,6 +4,7 @@
 #include <cinttypes>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 namespace ecs {
 
@@ -140,6 +141,8 @@ class basic_entity {
   template<typename, typename>
   friend class basic_registry;
 
+  friend std::hash<basic_entity<Type>>;
+
   using traits = entity_traits<Type>;
 
 public:
@@ -159,9 +162,9 @@ public:
 
   constexpr ~basic_entity() noexcept = default;
 
-  constexpr auto operator=(const basic_entity&) noexcept -> basic_entity&;
+  constexpr auto operator=(const basic_entity&) noexcept -> basic_entity& = default;
 
-  constexpr auto operator=(basic_entity&&) noexcept -> basic_entity&;
+  constexpr auto operator=(basic_entity&&) noexcept -> basic_entity& = default;
 
   constexpr auto operator==(const basic_entity& other) const noexcept -> bool {
     return traits::to_underlying(_value) == traits::to_underlying(other._value);
@@ -198,5 +201,15 @@ enum class entity_tag : std::uint32_t { };
 using entity = basic_entity<detail::entity_tag>;
 
 } // namespace ecs
+
+template<typename Type>
+struct std::hash<ecs::basic_entity<Type>> {
+  auto operator()(const ecs::basic_entity<Type>& entity) const noexcept -> std::size_t {
+    using underlying_type = typename ecs::basic_entity<Type>::id_type;
+    const auto value = ecs::basic_entity<Type>::traits::to_underlying(entity._value);
+
+    return std::hash<underlying_type>{}(value);
+  }
+};
 
 #endif // LIBECS_ENTITY_HPP_

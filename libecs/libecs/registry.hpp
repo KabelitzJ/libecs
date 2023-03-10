@@ -3,8 +3,13 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <typeindex>
+#include <optional>
 
 #include <libecs/entity.hpp>
+#include <libecs/sparse_set.hpp>
+#include <libecs/storage.hpp>
 
 namespace ecs {
 
@@ -16,10 +21,15 @@ class basic_registry {
   template<typename Type>
   using rebound_allocator = typename allocator_traits::rebind_alloc<Type>;
 
-  static_assert(std::is_same_v<typename allocator_traits::value_type, Entity>, "");
+  static_assert(std::is_same_v<typename allocator_traits::value_type, Entity>, "Invalid allocator type");
 
   using entity_storage_type = std::vector<Entity, Allocator>;
   using free_list_type = std::vector<std::size_t, rebound_allocator<std::size_t>>;
+
+  using basic_storage_type = sparse_set<Entity, Allocator>;
+
+  template<typename Type>
+  using storage_type = storage<Entity, Type, rebound_allocator<Type>>;
 
 public:
 
@@ -32,6 +42,12 @@ public:
 
   ~basic_registry() {
 
+  }
+
+  auto clear() -> void {
+    for (auto& storage : _component_storages) {
+      storage->clear();
+    }
   }
 
   auto create_entity() -> entity_type {
@@ -61,10 +77,97 @@ public:
     return index < _entities.size() && entity == _entities.at(index);
   }
 
+  template<typename Component>
+  auto has_component(const entity_type& entity) const -> bool {
+    using component_type = std::remove_cvref_t<Component>;
+
+    if (const auto storage = _try_get_storage<component_type>(); storage) {
+      return storage->get().contains(entity);
+    }
+
+    return false;
+  }
+
+  template<typename Component, typename... Args>
+  auto add_component(const entity_type& entity, Args&&... args) -> Component& {
+    using component_type = std::remove_cvref_t<Component>;
+
+    auto& storage = _get_or_create_storage<component_type>();
+
+    return static_cast<storage_type<component_type>&>(storage).add(entity, std::forward<Args>(args)...);
+  }
+
+  template<typename Component>
+  auto get_component(const entity_type& entity) -> Component& {
+    using component_type = std::remove_cvref_t<Component>;
+
+    if (const auto storage = _try_get_storage<component_type>(); storage) {
+      auto& component_storage = static_cast<storage_type<component_type>&>(storage->get());
+
+      if (auto entry = component_storage.find(entity); entry != component_storage.end()) {
+        return *entry;
+      }
+    }
+
+    throw std::runtime_error{"Entity does not have component assigned to it"};
+  }
+
+  template<typename Component>
+  auto get_component(const entity_type& entity) const -> const Component& {
+    using component_type = std::remove_cvref_t<Component>;
+
+    if (const auto storage = _try_get_storage<component_type>(); storage) {
+      const auto& component_storage = static_cast<const storage_type<component_type>&>(storage->get());
+
+      if (auto entry = component_storage.find(entity); entry != component_storage.cend()) {
+        return *entry;
+      }
+    }
+
+    throw std::runtime_error{"Entity does not have component assigned to it"};
+  }
+
 private:
+
+  template<typename Component>
+  auto _get_or_create_storage() -> basic_storage_type& {
+    const auto type = std::type_index{typeid(Component)};
+
+    if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
+      return *entry->second;
+    }
+
+    auto entry = _component_storages.insert({type, std::make_unique<storage_type<Component>>()}).first;
+
+    return *entry->second;
+  }
+
+  template<typename Component>
+  auto _try_get_storage() const -> std::optional<std::reference_wrapper<const basic_storage_type>> {
+    const auto type = std::type_index{typeid(Component)};
+
+    if (auto entry = _component_storages.find(type); entry != _component_storages.cend()) {
+      return std::cref(*entry->second);
+    }
+
+    return std::nullopt;
+  }
+
+  template<typename Component>
+  auto _try_get_storage() -> std::optional<std::reference_wrapper<basic_storage_type>> {
+    const auto type = std::type_index{typeid(Component)};
+
+    if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
+      return std::ref(*entry->second);
+    }
+
+    return std::nullopt;
+  }
 
   entity_storage_type _entities;
   free_list_type _free_entities;
+
+  std::unordered_map<std::type_index, std::unique_ptr<basic_storage_type>> _component_storages;
 
 };
 

@@ -1,5 +1,6 @@
 dependencies =
 import dependencies += libecs%lib{ecs}
+import dependencies += entt%lib{entt}
 
 exe{demo}: {hxx ixx txx cxx}{**} $dependencies
 
