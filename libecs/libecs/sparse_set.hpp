@@ -10,12 +10,10 @@
 
 namespace ecs {
 
-template<typename Type, typename Allocator = std::allocator<Type>>
+template<typename Type, allocator_for<Type> Allocator = std::allocator<Type>>
 class sparse_set {
 
   using allocator_traits = std::allocator_traits<Allocator>;
-
-  static_assert(std::is_same_v<typename allocator_traits::value_type, Type>, "Invalid allocator type");
 
   using dense_storage_type = std::vector<Type, Allocator>;
   using sparse_storage_type = std::unordered_map<Type, std::size_t, std::hash<Type>, std::equal_to<Type>, rebound_allocator_t<Allocator, std::pair<const Type, std::size_t>>>;

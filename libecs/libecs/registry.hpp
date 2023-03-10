@@ -14,12 +14,12 @@
 
 namespace ecs {
 
-template<typename Entity, typename Allocator = std::allocator<Entity>>
+template<entity_like Entity, allocator_for<Entity> Allocator = std::allocator<Entity>>
 class basic_registry {
 
   using allocator_traits = std::allocator_traits<Allocator>;
 
-  static_assert(std::is_same_v<typename allocator_traits::value_type, Entity>, "Invalid allocator type");
+  static_assert(allocator_for<Allocator, Entity>, "Invalid allocator type");
 
   using entity_storage_type = std::vector<Entity, Allocator>;
   using free_list_type = std::vector<std::size_t, rebound_allocator_t<Allocator, std::size_t>>;
@@ -33,6 +33,7 @@ public:
 
   using entity_type = Entity;
   using allocator_type = Allocator;
+  using size_type = std::size_t;
 
   basic_registry() = default;
 

@@ -11,12 +11,10 @@
 
 namespace ecs {
 
-template<typename Key, typename Value, typename Allocator = std::allocator<Value>>
+template<typename Key, typename Value, allocator_for<Value> Allocator = std::allocator<Value>>
 class storage : public sparse_set<Key, typename std::allocator_traits<Allocator>::rebind_alloc<Key>> {
 
   using allocator_traits = std::allocator_traits<Allocator>;
-
-  static_assert(std::is_same_v<typename allocator_traits::value_type, Value>, "Invalid allocator type");
 
   using base_type = sparse_set<Key, rebound_allocator_t<Allocator, Key>>;
 
