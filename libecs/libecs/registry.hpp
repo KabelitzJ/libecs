@@ -10,6 +10,7 @@
 #include <libecs/entity.hpp>
 #include <libecs/sparse_set.hpp>
 #include <libecs/storage.hpp>
+#include <libecs/memory.hpp>
 
 namespace ecs {
 
@@ -18,18 +19,15 @@ class basic_registry {
 
   using allocator_traits = std::allocator_traits<Allocator>;
 
-  template<typename Type>
-  using rebound_allocator = typename allocator_traits::rebind_alloc<Type>;
-
   static_assert(std::is_same_v<typename allocator_traits::value_type, Entity>, "Invalid allocator type");
 
   using entity_storage_type = std::vector<Entity, Allocator>;
-  using free_list_type = std::vector<std::size_t, rebound_allocator<std::size_t>>;
+  using free_list_type = std::vector<std::size_t, rebound_allocator_t<Allocator, std::size_t>>;
 
   using basic_storage_type = sparse_set<Entity, Allocator>;
 
   template<typename Type>
-  using storage_type = storage<Entity, Type, rebound_allocator<Type>>;
+  using storage_type = storage<Entity, Type, rebound_allocator_t<Allocator, Type>>;
 
 public:
 

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <libecs/sparse_set.hpp>
+#include <libecs/memory.hpp>
 
 namespace ecs {
 
@@ -15,12 +16,9 @@ class storage : public sparse_set<Key, typename std::allocator_traits<Allocator>
 
   using allocator_traits = std::allocator_traits<Allocator>;
 
-  template<typename Type>
-  using rebound_allocator = typename allocator_traits::rebind_alloc<Type>;
-
   static_assert(std::is_same_v<typename allocator_traits::value_type, Value>, "Invalid allocator type");
 
-  using base_type = sparse_set<Key, rebound_allocator<Key>>;
+  using base_type = sparse_set<Key, rebound_allocator_t<Allocator, Key>>;
 
   using container_type = std::vector<Value, Allocator>;
 
