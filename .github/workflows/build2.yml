@@ -8,14 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: "actions/checkout@v3"
-    - uses: "build2/setup-build2-github-action@v2"
+    - name: Build the docker image
+      run: docker build .docker/ --file Dockerfile --tag base-image:$(date +%s)
 
-    - name: Create configuration and initialize
-      run: "bdep init -C @gcc-debug ./configs/gcc/debug cc config.cxx=g++ config.cxx.poptions=-DDEBUG config.cxx.coptions=-g -Wall -Wextra"
-    - name: Build
-      run: "b update: ./configs/gcc/debug"
-    - name: Run basic demo
-      run: "./configs/gcc/debug/basic/examples/basic/basic.exe"
+    # - name: Create configuration and initialize
+    #   run: "bdep init -C @gcc-debug ./configs/gcc/debug cc config.cxx=g++ config.cxx.poptions=-DDEBUG config.cxx.coptions=-g -Wall -Wextra"
+    # - name: Build
+    #   run: "b update: ./configs/gcc/debug"
+    # - name: Run basic demo
+    #   run: "./configs/gcc/debug/basic/examples/basic/basic.exe"
