@@ -1,6 +1,6 @@
 dependencies =
 import dependencies += libecs%liba{ecs}
 
-exe{demo}: {hxx ixx txx cxx}{**} $dependencies
+exe{basic}: {hxx ixx txx cxx}{**} $dependencies
 
 cxx.poptions =+ "-I$out_root" "-I$src_root"

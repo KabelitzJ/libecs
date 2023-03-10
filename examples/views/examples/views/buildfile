@@ -1,0 +1,6 @@
+dependencies =
+import dependencies += libecs%liba{ecs}
+
+exe{views}: {hxx ixx txx cxx}{**} $dependencies
+
+cxx.poptions =+ "-I$out_root" "-I$src_root"
