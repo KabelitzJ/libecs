@@ -48,8 +48,6 @@ public:
     if (this != &other) {
       _dense = std::move(other._dense);
       _sparse = std::move(other._sparse);
-
-      other.clear();
     }
 
     return *this;

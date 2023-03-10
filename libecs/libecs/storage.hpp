@@ -49,12 +49,8 @@ public:
 
   auto operator=(storage&& other) noexcept -> storage& {
     if (this != &other) {
-      base_type::clear();
-
       base_type::operator=(std::move(other));
       _container = std::move(other._container);
-
-      other.clear();
     }
 
     return *this;
