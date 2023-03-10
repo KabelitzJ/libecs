@@ -32,9 +32,7 @@ public:
 
   sparse_set() = default;
 
-  sparse_set(const sparse_set& other)
-  : _dense{other._dense},
-    _sparse{other._sparse} { }
+  sparse_set(const sparse_set& other) = delete;
 
   sparse_set(sparse_set&& other) noexcept
   : _dense{std::move(other._dense)},
@@ -44,14 +42,7 @@ public:
     clear();
   }
 
-  auto operator=(const sparse_set& other) -> sparse_set& {
-    if (this != &other) {
-      _dense = other._dense;
-      _sparse = other._sparse;
-    }
-
-    return *this;
-  }
+  auto operator=(const sparse_set& other) -> sparse_set& = delete;
 
   auto operator=(sparse_set&& other) noexcept -> sparse_set& {
     if (this != &other) {

@@ -35,8 +35,29 @@ public:
   storage()
   : base_type{} { }
 
+  storage(const storage& other) = delete;
+
+  storage(storage&& other) noexcept
+  : base_type{std::move(other)},
+    _container{std::move(other._container)} { }
+
   ~storage() {
     base_type::clear();
+  }
+
+  auto operator=(const storage& other) -> storage& = delete;
+
+  auto operator=(storage&& other) noexcept -> storage& {
+    if (this != &other) {
+      base_type::clear();
+
+      base_type::operator=(std::move(other));
+      _container = std::move(other._container);
+
+      other.clear();
+    }
+
+    return *this;
   }
 
   template<typename... Args>
