@@ -45,7 +45,7 @@ public:
   requires(std::constructible_from<Value, Args...>)
   auto add(const key_type& key, Args&&... args) -> reference {
     if (auto entry = find(key); entry != end()) {
-      *entry = value_type{std::forward<Args>(args)...};
+      return (*entry = value_type{std::forward<Args>(args)...});
     }
 
     base_type::_emplace(key);
