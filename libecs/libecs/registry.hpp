@@ -34,18 +34,38 @@ public:
   using entity_type = Entity;
   using allocator_type = Allocator;
 
-  basic_registry() {
+  basic_registry() = default;
 
-  }
+  basic_registry(const basic_registry&) = delete;
+
+  basic_registry(basic_registry&& other) noexcept
+  : _entities{std::move(other._entities)},
+    _free_entities{std::move(other._free_entities)},
+    _component_storages{std::move(other._component_storages)} { }
 
   ~basic_registry() {
+    clear();
+  }
 
+  auto operator=(const basic_registry&) -> basic_registry& = delete;
+
+  auto operator=(basic_registry&& other) noexcept -> basic_registry& {
+    if (this != &other) {
+      _entities = std::move(other._entities);
+      _free_entities = std::move(other._free_entities);
+      _component_storages = std::move(other._component_storages);
+    }
+
+    return *this;
   }
 
   auto clear() -> void {
-    for (auto& storage : _component_storages) {
+    for (auto& [key, storage] : _component_storages) {
       storage->clear();
     }
+
+    _entities.clear();
+    _free_entities.clear();
   }
 
   auto create_entity() -> entity_type {
