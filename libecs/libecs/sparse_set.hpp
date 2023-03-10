@@ -18,8 +18,8 @@ class sparse_set {
 
   static_assert(std::is_same_v<typename allocator_traits::value_type, Type>, "Invalid allocator type");
 
-  using dense_storage_type = std::vector<Type>;
-  using sparse_storage_type = std::unordered_map<Type, std::size_t, std::hash<Type>, std::equal_to<Type>>;
+  using dense_storage_type = std::vector<Type, Allocator>;
+  using sparse_storage_type = std::unordered_map<Type, std::size_t, std::hash<Type>, std::equal_to<Type>, rebound_allocator<std::pair<const Type, std::size_t>>>;
 
 public:
 
