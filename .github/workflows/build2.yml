@@ -2,9 +2,15 @@ name: Build2
 
 on:
   push:
-    branches: [ "main", "development" ]
+    branches: [
+      "main",
+      "development"
+    ]
   pull_request:
-    branches: [ "main", "development" ]
+    branches: [
+      "main",
+      "development"
+    ]
 
 jobs:
   build:
@@ -12,11 +18,4 @@ jobs:
     steps:
     - uses: "actions/checkout@v3"
     - name: Build the docker image
-      run: docker build .docker/ --file Dockerfile --tag base-image:$(date +%s)
-
-    # - name: Create configuration and initialize
-    #   run: "bdep init -C @gcc-debug ./configs/gcc/debug cc config.cxx=g++ config.cxx.poptions=-DDEBUG config.cxx.coptions=-g -Wall -Wextra"
-    # - name: Build
-    #   run: "b update: ./configs/gcc/debug"
-    # - name: Run basic demo
-    #   run: "./configs/gcc/debug/basic/examples/basic/basic.exe"
+      run: docker build . --file .docker/Dockerfile --tag libecs-ci-image:$(date +%s)
