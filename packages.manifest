@@ -1,4 +1,6 @@
 : 1
 location: libecs/
 :
-location: demo/
+location: examples/basic/
+:
+location: examples/views/

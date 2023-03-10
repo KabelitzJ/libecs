@@ -1,4 +1,4 @@
-project = demo
+project = basic
 
 using version
 using config

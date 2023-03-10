@@ -1,8 +1,8 @@
 : 1
-name: demo
+name: basic
 version: 0.1.0
-project: ecs
-summary: demo C++ executable
+project: libecs
+summary: basic C++ executable
 license: MIT
 description-file: README.md
 depends: * build2 >= 0.15.0
