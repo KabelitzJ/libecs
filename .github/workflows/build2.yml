@@ -13,25 +13,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    container: kabelitzj/build2-base:latest
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
-    - name: Set up docker buildx
-      uses: docker/setup-buildx-action@v1
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      with:
-        username: ${{secrets.DOCKERHUB_USERNAME}}
-        password: ${{secrets.DOCKERHUB_TOKEN}}
-    - name: Build and push
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: .docker/Dockerfile
-        push: true
-        tags: ${{secrets.DOCKERHUB_USERNAME}}/${{secrets.DOCKERHUB_REPOSITORY}}:latest
-        cache-from: type=gha
-        cache-to: type=gha
+    - name: Initialize build2
+      run: bdep init -C @gcc-debug ./configs/gcc/debug/ cc config.cxx=g++ config.cxx.coptions=-g
+    - name: Build
+      run: "b update: ./configs/gcc/debug/"
+
+
+    # - name: Check out repository
+    #   uses: actions/checkout@v2
+    # - name: Set up docker buildx
+    #   uses: docker/setup-buildx-action@v1
+    # - name: Login to DockerHub
+    #   uses: docker/login-action@v1
+    #   with:
+    #     username: ${{secrets.DOCKERHUB_USERNAME}}
+    #     password: ${{secrets.DOCKERHUB_TOKEN}}
+    # - name: Build and push
+    #   uses: docker/build-push-action@v2
+    #   with:
+    #     context: .
+    #     file: .docker/Dockerfile
+    #     push: true
+    #     tags: ${{secrets.DOCKERHUB_USERNAME}}/${{secrets.DOCKERHUB_REPOSITORY}}:latest
+    #     cache-from: type=gha
+    #     cache-to: type=gha
 
     # - name: Build the docker image
     #   run: docker build . --file .docker/Dockerfile --tag libecs-ci-image:$(date +%s)
