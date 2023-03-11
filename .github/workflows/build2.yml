@@ -18,9 +18,7 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v2
     - name: Initialize build2
-      run: bdep init -C @gcc-debug ./configs/gcc/debug/ cc
-    - name: Build
-      run: "b update: ./configs/gcc/debug/"
+      run: bdep init
 
 
     # - name: Check out repository
