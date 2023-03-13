@@ -180,7 +180,7 @@ public:
     if constexpr (sizeof...(Components) == 0) {
       return view_type<Components...>{};
     } else {
-      using container_type = std::vector<std::tuple<const entity&, Components&...>>;
+      using container_type = typename view_type<Components...>::container_type;
 
       const auto component_filter = [&](const auto& entity){
         const auto has_components = std::initializer_list{has_component<Components>(entity)...};
