@@ -37,7 +37,7 @@ public:
 
   storage(storage&& other) noexcept
   : base_type{std::move(other)},
-    _container{std::move(other._container)} { }
+    _values{std::move(other._values)} { }
 
   ~storage() {
     base_type::clear();
@@ -48,7 +48,7 @@ public:
   auto operator=(storage&& other) noexcept -> storage& {
     if (this != &other) {
       base_type::operator=(std::move(other));
-      _container = std::move(other._container);
+      _values = std::move(other._values);
     }
 
     return *this;
@@ -63,33 +63,33 @@ public:
 
     base_type::_emplace(key);
 
-    _container.emplace_back(std::forward<Args>(args)...);
+    _values.emplace_back(std::forward<Args>(args)...);
 
-    return _container.back();
+    return _values.back();
   }
 
   auto begin() -> iterator {
-    return _container.begin();
+    return _values.begin();
   }
 
   auto begin() const -> const_iterator {
-    return _container.begin();
+    return _values.begin();
   }
 
   auto cbegin() const -> const_iterator {
-    return _container.cbegin();
+    return _values.cbegin();
   }
 
   auto end() -> iterator {
-    return _container.end();
+    return _values.end();
   }
 
   auto end() const -> const_iterator {
-    return _container.end();
+    return _values.end();
   }
 
   auto cend() const -> const_iterator {
-    return _container.cend();
+    return _values.cend();
   }
 
   auto find(const key_type& key) -> iterator {
@@ -118,21 +118,21 @@ protected:
     const auto index = base_type::_index(key);
 
     using std::swap;
-    swap(_container.at(index), _container.back());
+    swap(_values.at(index), _values.back());
 
-    _container.pop_back();
+    _values.pop_back();
 
     base_type::_swap_and_pop(key);
   }
 
   auto _clear() -> void override {
     base_type::_clear();
-    _container.clear();
+    _values.clear();
   }
 
 private:
 
-  container_type _container;
+  container_type _values;
 
 }; // class storage
 

@@ -6,11 +6,15 @@
 #include <unordered_map>
 #include <typeindex>
 #include <optional>
+#include <algorithm>
+#include <tuple>
+#include <ranges>
 
+#include <libecs/memory.hpp>
 #include <libecs/entity.hpp>
 #include <libecs/sparse_set.hpp>
 #include <libecs/storage.hpp>
-#include <libecs/memory.hpp>
+#include <libecs/view.hpp>
 
 namespace ecs {
 
@@ -34,6 +38,9 @@ public:
   using entity_type = Entity;
   using allocator_type = Allocator;
   using size_type = std::size_t;
+
+  template<typename... Components>
+  using view_type = basic_view<Components...>;
 
   basic_registry() = default;
 
@@ -117,33 +124,78 @@ public:
   }
 
   template<typename Component>
-  auto get_component(const entity_type& entity) -> Component& {
+  auto get_component(const entity_type& entity) const -> const Component& {
     using component_type = std::remove_cvref_t<Component>;
 
-    if (const auto storage = _try_get_storage<component_type>(); storage) {
-      auto& component_storage = static_cast<storage_type<component_type>&>(storage->get());
-
-      if (auto entry = component_storage.find(entity); entry != component_storage.end()) {
-        return *entry;
-      }
+    if (const auto component = try_get_component<component_type>(entity); component) {
+      return component->get();
     }
 
     throw std::runtime_error{"Entity does not have component assigned to it"};
   }
 
   template<typename Component>
-  auto get_component(const entity_type& entity) const -> const Component& {
+  auto get_component(const entity_type& entity) -> Component& {
+    using component_type = std::remove_cvref_t<Component>;
+
+    if (auto component = try_get_component<component_type>(entity); component) {
+      return component->get();
+    }
+
+    throw std::runtime_error{"Entity does not have component assigned to it"};
+  }
+
+  template<typename Component>
+  auto try_get_component(const entity_type& entity) const -> std::optional<std::reference_wrapper<const Component>> {
     using component_type = std::remove_cvref_t<Component>;
 
     if (const auto storage = _try_get_storage<component_type>(); storage) {
       const auto& component_storage = static_cast<const storage_type<component_type>&>(storage->get());
 
       if (auto entry = component_storage.find(entity); entry != component_storage.cend()) {
-        return *entry;
+        return std::cref(*entry);
       }
     }
 
-    throw std::runtime_error{"Entity does not have component assigned to it"};
+    throw std::nullopt;
+  }
+
+  template<typename Component>
+  auto try_get_component(const entity_type& entity) -> std::optional<std::reference_wrapper<Component>> {
+    using component_type = std::remove_cvref_t<Component>;
+
+    if (auto storage = _try_get_storage<component_type>(); storage) {
+      auto& component_storage = static_cast<storage_type<component_type>&>(storage->get());
+
+      if (auto entry = component_storage.find(entity); entry != component_storage.end()) {
+        return std::ref(*entry);
+      }
+    }
+
+    throw std::nullopt;
+  }
+
+  template<typename... Components>
+  auto create_view() -> view_type<Components...> {
+    if constexpr (sizeof...(Components) == 0) {
+      return view_type<Components...>{};
+    } else {
+      using container_type = std::vector<std::tuple<const entity&, Components&...>>;
+
+      const auto component_filter = [&](const auto& entity){
+        const auto has_components = std::initializer_list{has_component<Components>(entity)...};
+      
+        return std::all_of(std::begin(has_components), std::end(has_components), std::identity{});
+      };
+
+      auto entries = container_type{};
+
+      for (const auto& entity : _entities | std::views::filter(component_filter)) {
+        entries.emplace_back(std::forward_as_tuple(entity, get_component<Components>(entity)...));
+      }
+
+      return view_type<Components...>{entries};
+    }
   }
 
 private:
