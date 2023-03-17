@@ -7,6 +7,11 @@
 #include <ranges>
 #include <cstring>
 #include <forward_list>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
+#include <queue>
+#include <future>
 
 #include <libecs/ecs.hpp>
 
@@ -19,6 +24,94 @@ struct data {
 auto free_fn(const std::uint32_t& value) -> void {
   std::cout << "free_fn: " << value << '\n';
 }
+
+class thread_pool {
+
+public:
+
+  thread_pool(std::size_t size = 1)
+  : _is_finished{false} {
+    for (auto i = 0u; i < size; ++i) {
+      _threads.emplace_back([this](){ _run(); });
+    }
+  }
+
+  ~thread_pool() {
+    {
+      auto lock = std::scoped_lock{_mutex}; // lock
+      _is_finished = false;
+    } // unlock
+
+    _condition_variable.notify_all();
+
+    for (auto& thread : _threads) {
+      thread.join();
+    }
+  }
+
+  template<typename Callable, typename Return, typename... Args>
+  requires (std::is_invocable_r_v<Return, Callable, Args...>)
+  [[nodiscard]] auto enqueue(Callable&& callable, Args&&... args) -> std::future<Return> {
+    auto promise = std::make_shared<std::promise<Return>>();
+    auto future = promise->get_future();
+
+    {
+      auto lock = std::scoped_lock{_mutex};
+
+      _tasks.emplace_back([promise, callable = std::forward<Callable>(callable), ...args = std::forward<Args>(args)](){
+        try {
+          if constexpr (std::is_void_v<Return>) {
+            std::invoke(callable, std::forward<Args>(args)...);
+            promise->set_value();
+          } else {
+            promise->set_value(std::invoke(callable, std::forward<Args>(args)...));
+          }
+        } catch (...) {
+          promise->set_exception(std::current_exception());
+        }
+      });
+    }
+
+    _condition_variable.notify_one();
+
+    return future;
+  }
+
+private:
+
+  auto _run() -> void {
+    static auto thread_id = std::this_thread::get_id();
+
+    {
+      auto lock = std::scoped_lock{_mutex};
+      std::cout << "ThreadId: " << thread_id << "\n";
+    }
+
+    while (!_is_finished) {
+      auto lock = std::unique_lock{_mutex};
+
+      _condition_variable.wait(lock, [this](){ return !_tasks.empty() || _is_finished; });
+
+      if (_is_finished) {
+        break;
+      }
+
+      auto task = std::move(_tasks.back());
+      _tasks.pop_back();
+
+      lock.unlock();
+
+      std::invoke(task);
+    }
+  }
+
+  std::vector<std::thread> _threads;
+  std::condition_variable _condition_variable;
+  std::mutex _mutex;
+  bool _is_finished;
+  std::vector<std::function<void()>> _tasks{};
+
+}; // class thread_pool
 
 struct handler {
   auto method(const std::uint32_t& value) -> void {
