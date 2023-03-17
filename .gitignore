@@ -1,4 +1,9 @@
 .bdep/
 .vscode/
+.cache/
+
+.clangd
 
 configs/
+
+compile_commands.json
