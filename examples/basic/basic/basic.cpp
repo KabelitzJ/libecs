@@ -12,10 +12,30 @@
 #include <mutex>
 #include <queue>
 #include <future>
+#include <chrono>
+#include <numbers>
+#include <random>
 
 #include <libecs/ecs.hpp>
 
 #include <basic/delegate.hpp>
+
+struct random {
+
+  template<typename Type>
+  requires ((std::is_integral_v<Type> && ! std::is_same_v<Type, bool>) || std::is_floating_point_v<Type>)
+  static auto next(Type min = std::numeric_limits<Type>::min(), Type max = std::numeric_limits<Type>::max()) -> Type {
+    using distribution_type = std::conditional_t<std::is_floating_point_v<Type>, std::uniform_real_distribution<Type>, std::uniform_int_distribution<Type>>;
+
+    static auto device = std::random_device{};
+    static auto engine = std::default_random_engine{device()};
+
+    auto distribution = distribution_type{min, max};
+
+    return distribution(engine);
+  }
+
+}; // class random
 
 struct data {
   std::uint32_t value;
@@ -24,94 +44,6 @@ struct data {
 auto free_fn(const std::uint32_t& value) -> void {
   std::cout << "free_fn: " << value << '\n';
 }
-
-class thread_pool {
-
-public:
-
-  thread_pool(std::size_t size = 1)
-  : _is_finished{false} {
-    for (auto i = 0u; i < size; ++i) {
-      _threads.emplace_back([this](){ _run(); });
-    }
-  }
-
-  ~thread_pool() {
-    {
-      auto lock = std::scoped_lock{_mutex}; // lock
-      _is_finished = false;
-    } // unlock
-
-    _condition_variable.notify_all();
-
-    for (auto& thread : _threads) {
-      thread.join();
-    }
-  }
-
-  template<typename Callable, typename Return, typename... Args>
-  requires (std::is_invocable_r_v<Return, Callable, Args...>)
-  [[nodiscard]] auto enqueue(Callable&& callable, Args&&... args) -> std::future<Return> {
-    auto promise = std::make_shared<std::promise<Return>>();
-    auto future = promise->get_future();
-
-    {
-      auto lock = std::scoped_lock{_mutex};
-
-      _tasks.emplace_back([promise, callable = std::forward<Callable>(callable), ...args = std::forward<Args>(args)](){
-        try {
-          if constexpr (std::is_void_v<Return>) {
-            std::invoke(callable, std::forward<Args>(args)...);
-            promise->set_value();
-          } else {
-            promise->set_value(std::invoke(callable, std::forward<Args>(args)...));
-          }
-        } catch (...) {
-          promise->set_exception(std::current_exception());
-        }
-      });
-    }
-
-    _condition_variable.notify_one();
-
-    return future;
-  }
-
-private:
-
-  auto _run() -> void {
-    static auto thread_id = std::this_thread::get_id();
-
-    {
-      auto lock = std::scoped_lock{_mutex};
-      std::cout << "ThreadId: " << thread_id << "\n";
-    }
-
-    while (!_is_finished) {
-      auto lock = std::unique_lock{_mutex};
-
-      _condition_variable.wait(lock, [this](){ return !_tasks.empty() || _is_finished; });
-
-      if (_is_finished) {
-        break;
-      }
-
-      auto task = std::move(_tasks.back());
-      _tasks.pop_back();
-
-      lock.unlock();
-
-      std::invoke(task);
-    }
-  }
-
-  std::vector<std::thread> _threads;
-  std::condition_variable _condition_variable;
-  std::mutex _mutex;
-  bool _is_finished;
-  std::vector<std::function<void()>> _tasks{};
-
-}; // class thread_pool
 
 struct handler {
   auto method(const std::uint32_t& value) -> void {
@@ -135,40 +67,32 @@ struct handler {
   }
 }; // struct handler
 
+template<typename Class, typename Return, typename... Args>
+auto wrap_method(Class* instance, Return(Class::*fn)(Args...)) {
+  return [instance, fn](Args... args){ std::invoke(fn, instance, std::forward<Args>(args)...); };
+}
+
+template<typename Class, typename Return, typename... Args>
+auto wrap_method(Class* instance, Return(Class::*fn)(Args...)const) {
+  return [instance, fn](Args... args){ std::invoke(fn, instance, std::forward<Args>(args)...); };
+}
+
+template<typename Class, typename Return, typename... Args>
+auto wrap_method(const Class* instance, Return(Class::*fn)(Args...)const) {
+  return [instance, fn](Args... args){ std::invoke(fn, instance, std::forward<Args>(args)...); };
+}
+
 auto main() -> int {
   auto instance = handler{};
   const auto const_instance = handler{};
 
-  auto lambda = ecs::delegate<void(const std::uint32_t&)>{[](const std::uint32_t& value){ std::cout << "lambda: " << value << '\n'; }};
-  lambda(42u);
+  auto method1 = ecs::delegate<void(const std::uint32_t&)>{instance, &handler::method};
+  auto method2 = ecs::delegate<void(const std::uint32_t&)>{instance, &handler::const_method};
+  auto const_method = ecs::delegate<void(const std::uint32_t&)>{const_instance, &handler::const_method};
 
-  auto method = ecs::delegate<void(const std::uint32_t&)>{[&instance](const std::uint32_t& value){ instance.method(value); }};
-  method(42u);
-
-  auto const_method = ecs::delegate<void(const std::uint32_t&)>{[&const_instance](const std::uint32_t& value){ const_instance.const_method(value); }};
+  method1(42u);
+  method2(42u);
   const_method(42u);
-
-  auto free = ecs::delegate<void(const std::uint32_t&)>{free_fn};
-  free(42u);
-
-  auto static_method = ecs::delegate<void(const std::uint32_t&)>{&handler::static_method};
-  static_method(42u);
-
-  auto op = ecs::delegate<void(const std::uint32_t&)>{instance};
-  op(42u);
-
-
-  auto registry = ecs::registry{};
-
-  auto player = registry.create_entity();
-
-  registry.add_component<data>(player, 42u);
-
-  auto& component = registry.get_component<data>(player);
-  
-  component.value = 69u;
-
-  std::cout << registry.get_component<data>(player).value << '\n';
 
   return 0;
 }
