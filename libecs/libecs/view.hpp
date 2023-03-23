@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <libecs/memory.hpp>
+#include <libecs/component_handle.hpp>
 
 namespace ecs {
 
@@ -16,7 +17,7 @@ class basic_view {
   template<entity_like Entity, allocator_for<Entity> Allocator>
   friend class basic_registry;
 
-  using underlying_type = std::tuple<const entity&, Components&...>;
+  using underlying_type = std::tuple<const entity&, component_handle<Components>...>;
   using container_type = std::vector<underlying_type>;
 
 public:

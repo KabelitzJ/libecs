@@ -15,6 +15,7 @@
 #include <libecs/sparse_set.hpp>
 #include <libecs/storage.hpp>
 #include <libecs/view.hpp>
+#include <libecs/component_handle.hpp>
 
 namespace ecs {
 
@@ -93,6 +94,11 @@ public:
   }
 
   auto destroy_entity(const entity_type& entity) -> void {
+    // [NOTE] : Clear out all components that are owned by this entity
+    for (auto& [type, storage] : _component_storages) {
+      storage->remove(entity);
+    }
+
     auto index = static_cast<std::size_t>(entity._id());
     _free_entities.push_back(index);
     _entities.at(index)._increment_version();
@@ -115,7 +121,7 @@ public:
   }
 
   template<typename Component, typename... Args>
-  auto add_component(const entity_type& entity, Args&&... args) -> Component& {
+  auto add_component(const entity_type& entity, Args&&... args) -> component_handle<Component> {
     using component_type = std::remove_cvref_t<Component>;
 
     auto& storage = _get_or_create_storage<component_type>();
@@ -124,55 +130,55 @@ public:
   }
 
   template<typename Component>
-  auto get_component(const entity_type& entity) const -> const Component& {
+  auto get_component(const entity_type& entity) const -> component_handle<const Component> {
     using component_type = std::remove_cvref_t<Component>;
 
     if (const auto component = try_get_component<component_type>(entity); component) {
-      return component->get();
+      return *component;
     }
 
     throw std::runtime_error{"Entity does not have component assigned to it"};
   }
 
   template<typename Component>
-  auto get_component(const entity_type& entity) -> Component& {
+  auto get_component(const entity_type& entity) -> component_handle<Component> {
     using component_type = std::remove_cvref_t<Component>;
 
     if (auto component = try_get_component<component_type>(entity); component) {
-      return component->get();
+      return *component;
     }
 
     throw std::runtime_error{"Entity does not have component assigned to it"};
   }
 
   template<typename Component>
-  auto try_get_component(const entity_type& entity) const -> std::optional<std::reference_wrapper<const Component>> {
+  auto try_get_component(const entity_type& entity) const -> component_handle<const Component> {
     using component_type = std::remove_cvref_t<Component>;
 
     if (const auto storage = _try_get_storage<component_type>(); storage) {
       const auto& component_storage = static_cast<const storage_type<component_type>&>(storage->get());
 
       if (auto entry = component_storage.find(entity); entry != component_storage.cend()) {
-        return std::cref(*entry);
+        return *entry;
       }
     }
 
-    throw std::nullopt;
+    return component_handle<const Component>{};
   }
 
   template<typename Component>
-  auto try_get_component(const entity_type& entity) -> std::optional<std::reference_wrapper<Component>> {
+  auto try_get_component(const entity_type& entity) -> component_handle<Component> {
     using component_type = std::remove_cvref_t<Component>;
 
     if (auto storage = _try_get_storage<component_type>(); storage) {
       auto& component_storage = static_cast<storage_type<component_type>&>(storage->get());
 
       if (auto entry = component_storage.find(entity); entry != component_storage.end()) {
-        return std::ref(*entry);
+        return *entry;
       }
     }
 
-    throw std::nullopt;
+    return component_handle<Component>{};
   }
 
   template<typename... Components>

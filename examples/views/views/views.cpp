@@ -17,7 +17,7 @@ auto main() -> int {
   auto view = registry.create_view<data>();
 
   for (auto& [entity, data] : view) {
-    std::cout << data.value << '\n';
+    std::cout << data->value << '\n';
   }
 
   return 0;

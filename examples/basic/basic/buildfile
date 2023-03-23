@@ -1,6 +1,8 @@
 dependencies =
 import dependencies += libecs%liba{ecs}
+import dependencies += sol2%lib{sol2}
+import dependencies += fmt%liba{fmt}
 
-exe{basic}: {hxx ixx txx cxx}{**} $dependencies
+exe{basic}: {hxx ixx txx cxx}{**} ../assets/scripts/lib{scripts} $dependencies
 
 cxx.poptions =+ "-I$out_root" "-I$src_root"
