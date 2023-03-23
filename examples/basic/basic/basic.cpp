@@ -18,6 +18,7 @@
 #include <string>
 #include <string_view>
 #include <filesystem>
+#include <unordered_set>
 #include <fstream>
 
 #include <fmt/format.h>
@@ -32,13 +33,20 @@
 #include <basic/logger.hpp>
 
 #include <assets/scripts/camera_controller.hpp>
+#include <assets/scripts/player_controller.hpp>
+
+class handle {
+
+}; // class handle
 
 auto main() -> int {
   auto scene = ecs::scene{};
 
   auto camera = scene.create_node();
-
   camera.add_script<scripts::camera_controller>();
+  
+  auto player = scene.create_node();
+  player.add_script<scripts::player_controller>();
 
   scene.initialize();
   scene.update(0.1f);

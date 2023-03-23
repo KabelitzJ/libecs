@@ -12,42 +12,35 @@ auto scene::node::get_component() -> component_handle<Component> {
 template<typename Type, typename... Args>
 requires (std::is_base_of_v<script<Type>, Type> && std::is_constructible_v<Type, Args...>)
 auto scene::node::add_script(Args&&... args) -> void {
-  const auto type = std::type_index{typeid(Type)};
-
   auto* script = new Type{std::forward<Args>(args)...};
   script->_set_node(this);
 
   auto handle = script_handle{
-    .instance = script_handle::instance_type{script, &scene::_deleter<Type>},
-    .on_create = [](scene& scene, std::type_index type){ scene::_on_create<Type>(scene, type); },
-    .on_destroy = [](scene& scene, std::type_index type){ scene::_on_destroy<Type>(scene, type); },
-    .on_update = [](scene& scene, std::type_index type, std::float_t delta_time){ scene::_on_update<Type>(scene, type, delta_time); }
+    .instance = script_handle::instance_type{script, [](void* ptr){ delete static_cast<Type*>(ptr); }},
+    .on_create = [](scene& scene, const entity& entity){ scene::_on_create<Type>(scene, entity); },
+    .on_destroy = [](scene& scene, const entity& entity){ scene::_on_destroy<Type>(scene, entity); },
+    .on_update = [](scene& scene, const entity& entity, std::float_t delta_time){ scene::_on_update<Type>(scene, entity, delta_time); }
   };
 
-  _scene->_scripts.insert({type, std::move(handle)});
+  _scene->_registry.add_component<script_handle>(_entity, std::move(handle));
 }
 
 template<typename Type>
-auto scene::_on_create(scene& scene, std::type_index type) -> void {
-  auto* script = static_cast<Type*>(scene._scripts.at(type).instance.get());
+auto scene::_on_create(scene& scene, const entity& entity) -> void {
+  auto* script = static_cast<Type*>(scene._registry.get_component<script_handle>(entity)->instance.get());
   script->_create();
 }
 
 template<typename Type>
-auto scene::_on_destroy(scene& scene, std::type_index type) -> void {
-  auto* script = static_cast<Type*>(scene._scripts.at(type).instance.get());
+auto scene::_on_destroy(scene& scene, const entity& entity) -> void {
+  auto* script = static_cast<Type*>(scene._registry.get_component<script_handle>(entity)->instance.get());
   script->_destroy();
 }
 
 template<typename Type>
-auto scene::_on_update(scene& scene, std::type_index type, std::float_t delta_time) -> void {
-  auto* script = static_cast<Type*>(scene._scripts.at(type).instance.get());
+auto scene::_on_update(scene& scene, const entity& entity, std::float_t delta_time) -> void {
+  auto* script = static_cast<Type*>(scene._registry.get_component<script_handle>(entity)->instance.get());
   script->_update(delta_time);
-}
-
-template<typename Type>
-auto scene::_deleter(void* ptr) -> void {
-  delete static_cast<Type*>(ptr);
 }
 
 } // namespace ecs
