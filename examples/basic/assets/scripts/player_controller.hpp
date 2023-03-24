@@ -14,23 +14,18 @@ class player_controller : public ecs::script<player_controller> {
 
 public:
 
-  player_controller() = default;
-
   auto on_create() -> void {
-    std::cout << "player_controller::on_create()\n";
-  }
-
-  auto on_destroy() -> void {
-    std::cout << "player_controller::on_destroy()\n";
+    _position = get_component<ecs::vector3>();
   }
 
   auto on_update(std::float_t delta_time) -> void {
     std::cout << "player_controller::on_update(" << delta_time << ")\n";
+    std::cout << "(" << _position->x << ", " << _position->y << ", " << _position->z << ")\n";
   }
 
 private:
 
-
+  ecs::component_handle<ecs::vector3> _position{};
 
 }; // class player_controller
 

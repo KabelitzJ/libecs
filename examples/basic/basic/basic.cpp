@@ -35,9 +35,27 @@
 #include <assets/scripts/camera_controller.hpp>
 #include <assets/scripts/player_controller.hpp>
 
-class handle {
+class data {
 
-}; // class handle
+public:
+
+  data(std::uint32_t value) : _value{value} { }
+
+  ~data() = default;
+
+  auto get_value() -> std::uint32_t {
+    return _value;
+  }
+
+  auto set_value(std::uint32_t value) -> void {
+    _value = value;
+  }
+
+private:
+
+  std::uint32_t _value;
+
+}; // class data
 
 auto main() -> int {
   auto scene = ecs::scene{};

@@ -55,15 +55,15 @@ private:
     static_cast<Derived*>(this)->on_update(delta_time);
   }
 
-  auto _create() -> void {
+  auto _on_create() -> void {
     _invoke_hook(std::integral_constant<hook, hook::on_create>{});
   }
 
-  auto _destroy() -> void {
+  auto _on_destroy() -> void {
     _invoke_hook(std::integral_constant<hook, hook::on_destroy>{});
   }
 
-  auto _update(std::float_t delta_time) -> void {
+  auto _on_update(std::float_t delta_time) -> void {
     _invoke_hook(std::integral_constant<hook, hook::on_update>{}, delta_time);
   }
 
