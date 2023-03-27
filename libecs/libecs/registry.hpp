@@ -167,14 +167,18 @@ public:
 
   template<typename... Components>
   auto create_view() -> view_type<Components...> {
-    if constexpr (sizeof...(Components) == 0) {
-      return view_type<Components...>{};
-    } else {
-      return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
-    }
+    return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
+  }
+
+  template<typename... Components>
+  auto create_view() const -> view_type<Components...> {
+    return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
   }
 
 private:
+
+  template<typename From, typename To>
+  using constness_as_t = std::conditional_t<std::is_const_v<From>, const To, To>;
 
   template<typename Component>
   auto _get_or_create_storage() -> storage_type<Component>& {

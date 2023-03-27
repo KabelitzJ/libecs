@@ -51,7 +51,7 @@ auto main() -> int {
 
   for (const auto& entity : view1) {
     auto i = view1.get<std::uint32_t>(entity);
-    auto v = view1.get<const ecs::vector3>(entity);
+    auto v = view1.get<ecs::vector3>(entity);
 
     fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
   }

@@ -2,7 +2,6 @@ dependencies =
 import dependencies += libecs%liba{ecs}
 import dependencies += sol2%lib{sol2}
 import dependencies += fmt%liba{fmt}
-import dependencies += entt%liba{entt}
 
 exe{basic}: {hxx ixx txx cxx}{**} ../assets/scripts/lib{scripts} $dependencies
 

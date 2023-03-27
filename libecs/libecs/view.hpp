@@ -205,7 +205,7 @@ template<typename Type, typename First, typename... Other>
 struct type_list_index<Type, type_list<First, Other...>> {
   using value_type = std::size_t;
 
-  static constexpr value_type value = 1u + type_list_index<Type, type_list<Other...>>::value;
+  static constexpr auto value = 1u + type_list_index<Type, type_list<Other...>>::value;
 };
 
 template<typename Type, typename... Other>
@@ -293,6 +293,8 @@ public:
   }
 
 private:
+
+  basic_view() noexcept = default;
 
   basic_view(Containers&... containers) noexcept
   : _containers{&containers...},
