@@ -25,8 +25,8 @@ public:
   using value_type = Type;
   using reference = value_type&;
   using const_reference = const value_type&;
-
   using iterator = dense_storage_type::iterator;
+  using const_iterator = dense_storage_type::const_iterator;
 
   sparse_set() = default;
 
@@ -61,6 +61,14 @@ public:
     return false;
   }
 
+  auto size() const noexcept -> size_type {
+    return _dense.size();
+  }
+
+  auto at(size_type index) const -> const_reference {
+    return _dense.at(index);
+  }
+
   auto remove(const_reference value) -> void {
     if (!contains(value)) {
       return;
@@ -71,6 +79,34 @@ public:
 
   auto clear() -> void {
     _clear();
+  }
+
+  auto begin() -> iterator {
+    return _dense.begin();
+  }
+
+  auto begin() const -> const_iterator {
+    const auto itr = _dense.begin();
+    const auto value = *itr;
+    return itr;
+  }
+
+  auto cbegin() const -> const_iterator {
+    return _dense.cbegin();
+  }
+
+  auto end() -> iterator {
+    return _dense.end();
+  }
+
+  auto end() const -> const_iterator {
+    const auto itr = _dense.end();
+    const auto value = *itr;
+    return itr;
+  }
+
+  auto cend() const -> const_iterator {
+    return _dense.cend();
   }
 
 protected:

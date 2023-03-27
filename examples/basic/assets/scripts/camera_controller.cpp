@@ -5,10 +5,6 @@
 
 namespace scripts {
 
-auto special_function() -> void {
-  std::cout << "special_function()\n";
-}
-
 auto camera_controller::on_create() -> void {
   _position = get_component<ecs::vector3>();
 }

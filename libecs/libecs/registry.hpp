@@ -32,7 +32,7 @@ class basic_registry {
   using basic_storage_type = sparse_set<Entity, Allocator>;
 
   template<typename Type>
-  using storage_type = storage<Entity, Type, rebound_allocator_t<Allocator, Type>>;
+  using storage_type = storage<Entity, std::remove_cvref_t<Type>, rebound_allocator_t<Allocator, std::remove_cvref_t<Type>>>;
 
 public:
 
@@ -41,7 +41,7 @@ public:
   using size_type = std::size_t;
 
   template<typename... Components>
-  using view_type = basic_view<Components...>;
+  using view_type = basic_view<storage_type<Components>...>;
 
   basic_registry() = default;
 
@@ -111,9 +111,7 @@ public:
 
   template<typename Component>
   auto has_component(const entity_type& entity) const -> bool {
-    using component_type = std::remove_cvref_t<Component>;
-
-    if (const auto storage = _try_get_storage<component_type>(); storage) {
+    if (const auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
       return storage->get().contains(entity);
     }
 
@@ -122,18 +120,14 @@ public:
 
   template<typename Component, typename... Args>
   auto add_component(const entity_type& entity, Args&&... args) -> component_handle<Component> {
-    using component_type = std::remove_cvref_t<Component>;
+    auto& storage = _get_or_create_storage<std::remove_cvref_t<Component>>();
 
-    auto& storage = _get_or_create_storage<component_type>();
-
-    return static_cast<storage_type<component_type>&>(storage).add(entity, std::forward<Args>(args)...);
+    return storage.add(entity, std::forward<Args>(args)...);
   }
 
   template<typename Component>
   auto get_component(const entity_type& entity) const -> component_handle<const Component> {
-    using component_type = std::remove_cvref_t<Component>;
-
-    if (const auto component = try_get_component<component_type>(entity); component) {
+    if (const auto component = try_get_component<std::remove_cvref_t<Component>>(entity); component) {
       return *component;
     }
 
@@ -142,9 +136,7 @@ public:
 
   template<typename Component>
   auto get_component(const entity_type& entity) -> component_handle<Component> {
-    using component_type = std::remove_cvref_t<Component>;
-
-    if (auto component = try_get_component<component_type>(entity); component) {
+    if (auto component = try_get_component<std::remove_cvref_t<Component>>(entity); component) {
       return *component;
     }
 
@@ -153,12 +145,8 @@ public:
 
   template<typename Component>
   auto try_get_component(const entity_type& entity) const -> component_handle<const Component> {
-    using component_type = std::remove_cvref_t<Component>;
-
-    if (const auto storage = _try_get_storage<component_type>(); storage) {
-      const auto& component_storage = static_cast<const storage_type<component_type>&>(storage->get());
-
-      if (auto entry = component_storage.find(entity); entry != component_storage.cend()) {
+    if (const auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
+      if (auto entry = storage->get().find(entity); entry != storage->get().cend()) {
         return *entry;
       }
     }
@@ -168,12 +156,8 @@ public:
 
   template<typename Component>
   auto try_get_component(const entity_type& entity) -> component_handle<Component> {
-    using component_type = std::remove_cvref_t<Component>;
-
-    if (auto storage = _try_get_storage<component_type>(); storage) {
-      auto& component_storage = static_cast<storage_type<component_type>&>(storage->get());
-
-      if (auto entry = component_storage.find(entity); entry != component_storage.end()) {
+    if (auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
+      if (auto entry = storage->get().find(entity); entry != storage->get().end()) {
         return *entry;
       }
     }
@@ -186,56 +170,42 @@ public:
     if constexpr (sizeof...(Components) == 0) {
       return view_type<Components...>{};
     } else {
-      using container_type = typename view_type<Components...>::container_type;
-
-      const auto component_filter = [&](const auto& entity){
-        const auto has_components = std::initializer_list{has_component<Components>(entity)...};
-      
-        return std::all_of(std::begin(has_components), std::end(has_components), std::identity{});
-      };
-
-      auto entries = container_type{};
-
-      for (const auto& entity : _entities | std::views::filter(component_filter)) {
-        entries.emplace_back(std::forward_as_tuple(entity, get_component<Components>(entity)...));
-      }
-
-      return view_type<Components...>{entries};
+      return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
     }
   }
 
 private:
 
   template<typename Component>
-  auto _get_or_create_storage() -> basic_storage_type& {
+  auto _get_or_create_storage() -> storage_type<Component>& {
     const auto type = std::type_index{typeid(Component)};
 
     if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
-      return *entry->second;
+      return static_cast<storage_type<Component>&>(*entry->second);
     }
 
     auto entry = _component_storages.insert({type, std::make_unique<storage_type<Component>>()}).first;
 
-    return *entry->second;
+    return static_cast<storage_type<Component>&>(*entry->second);
   }
 
   template<typename Component>
-  auto _try_get_storage() const -> std::optional<std::reference_wrapper<const basic_storage_type>> {
+  auto _try_get_storage() const -> std::optional<std::reference_wrapper<const storage_type<Component>>> {
     const auto type = std::type_index{typeid(Component)};
 
     if (auto entry = _component_storages.find(type); entry != _component_storages.cend()) {
-      return std::cref(*entry->second);
+      return std::cref(static_cast<storage_type<Component>&>(*entry->second));
     }
 
     return std::nullopt;
   }
 
   template<typename Component>
-  auto _try_get_storage() -> std::optional<std::reference_wrapper<basic_storage_type>> {
+  auto _try_get_storage() -> std::optional<std::reference_wrapper<storage_type<Component>>> {
     const auto type = std::type_index{typeid(Component)};
 
     if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
-      return std::ref(*entry->second);
+      return std::ref(static_cast<storage_type<Component>&>(*entry->second));
     }
 
     return std::nullopt;

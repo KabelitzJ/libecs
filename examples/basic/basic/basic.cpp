@@ -35,40 +35,48 @@
 #include <assets/scripts/camera_controller.hpp>
 #include <assets/scripts/player_controller.hpp>
 
-class data {
-
-public:
-
-  data(std::uint32_t value) : _value{value} { }
-
-  ~data() = default;
-
-  auto get_value() -> std::uint32_t {
-    return _value;
-  }
-
-  auto set_value(std::uint32_t value) -> void {
-    _value = value;
-  }
-
-private:
-
-  std::uint32_t _value;
-
-}; // class data
-
 auto main() -> int {
   auto scene = ecs::scene{};
 
-  auto camera = scene.create_node();
-  camera.add_script<scripts::camera_controller>();
-  
-  auto player = scene.create_node();
-  player.add_script<scripts::player_controller>();
+  auto n1 = scene.create_node(ecs::vector3{1.0, 2.0, 3.0});
+  n1.add_component<std::uint32_t>(1u);
 
-  scene.initialize();
-  scene.update(0.1f);
-  scene.terminate();
+  auto n2 = scene.create_node();
+  // n2.add_component<std::uint32_t>(2u);
+
+  auto n3 = scene.create_node();
+  n3.add_component<std::uint32_t>(3u);
+
+  auto view1 = scene.create_view<std::uint32_t, const ecs::vector3>();
+
+  for (const auto& entity : view1) {
+    auto i = view1.get<std::uint32_t>(entity);
+    auto v = view1.get<const ecs::vector3>(entity);
+
+    fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
+  }
+
+  fmt::print("\n");
+
+  for (const auto& [e, i, v] : view1.each()) {
+    fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
+  }
+
+  fmt::print("\n");
+
+  for (auto [e, i, v] : view1.each()) {
+    fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
+  }
+
+  // auto camera = scene.create_node();
+  // camera.add_script<scripts::camera_controller>();
+  
+  // auto player = scene.create_node();
+  // player.add_script<scripts::player_controller>();
+
+  // scene.initialize();
+  // scene.update(0.1f);
+  // scene.terminate();
 
   return 0;
 }

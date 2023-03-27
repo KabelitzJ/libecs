@@ -11,9 +11,6 @@
 
 namespace ecs {
 
-template<typename Type>
-concept component = std::is_same_v<Type, vector3>;
-
 template<typename>
 class script;
 
@@ -41,8 +38,11 @@ public:
 
     ~node() = default;
 
-    template<component Component>
+    template<typename Component>
     auto get_component() -> component_handle<Component>;
+
+    template<typename Component, typename... Args>
+    auto add_component(Args&&... args) -> component_handle<Component>;
 
     template<typename Type, typename... Args>
     requires (std::is_base_of_v<script<Type>, Type> && std::is_constructible_v<Type, Args...>)
@@ -64,6 +64,9 @@ public:
 
     return node{this, entity};
   }
+
+  template<typename... Components>
+  auto create_view() -> decltype(auto);
 
   auto initialize() -> void;
 

@@ -16,12 +16,12 @@ class storage : public sparse_set<Key, typename std::allocator_traits<Allocator>
 
   using allocator_traits = std::allocator_traits<Allocator>;
 
-  using base_type = sparse_set<Key, rebound_allocator_t<Allocator, Key>>;
 
   using container_type = std::vector<Value, Allocator>;
 
 public:
 
+  using base_type = sparse_set<Key, rebound_allocator_t<Allocator, Key>>;
   using key_type = Key;
   using value_type = Value;
   using reference = value_type&;
@@ -110,6 +110,22 @@ public:
     }
 
     return cend();
+  }
+
+  auto get(const key_type& key) -> reference {
+    return *find(key);
+  }
+
+  auto get(const key_type& key) const -> const_reference {
+    return *find(key);
+  }
+
+  auto as_tuple(const key_type& key) -> std::tuple<reference> {
+    return std::forward_as_tuple(*find(key));
+  }
+
+  auto as_tuple(const key_type& key) const -> std::tuple<const_reference> {
+    return std::forward_as_tuple(*find(key));
   }
 
 protected:

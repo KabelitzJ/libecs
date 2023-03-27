@@ -175,6 +175,11 @@ public:
     return traits::to_underlying(_value) == traits::to_underlying(other._value);
   }
 
+  // [TODO]: Remove
+  operator id_type() const noexcept {
+    return traits::to_underlying(_value);
+  }
+
 private:
 
   constexpr basic_entity(const id_type id, const version_type version) noexcept

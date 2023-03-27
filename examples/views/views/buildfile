@@ -1,4 +1,5 @@
 dependencies =
+import dependencies += fmt%liba{fmt}
 import dependencies += libecs%liba{ecs}
 
 exe{views}: {hxx ixx txx cxx}{**} $dependencies

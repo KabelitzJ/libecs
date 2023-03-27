@@ -7,8 +7,6 @@
 
 namespace scripts {
 
-auto special_function() -> void;
-
 class camera_controller : public ecs::script<camera_controller> {
 
 public:

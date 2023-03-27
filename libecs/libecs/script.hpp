@@ -21,7 +21,7 @@ public:
 
   virtual ~script() = default;
 
-  template<component Component>
+  template<typename Component>
   auto get_component() -> component_handle<Component> {
     return _node->get_component<Component>();
   }

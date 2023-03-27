@@ -7,4 +7,5 @@ license: MIT
 description-file: README.md
 depends: * build2 >= 0.15.0
 depends: * bpkg >= 0.15.0
+depends: fmt >= 8.1.0
 depends: libecs >= 0.1.0

@@ -6,5 +6,7 @@
 #include <libecs/script.hpp>
 #include <libecs/scene.hpp>
 #include <libecs/vector3.hpp>
+#include <libecs/range.hpp>
+#include <libecs/zip.hpp>
 
 #endif // LIBECS_ECS_HPP_

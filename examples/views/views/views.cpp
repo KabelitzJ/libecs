@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <fmt/format.h>
+
 #include <libecs/ecs.hpp>
 
 struct data {
@@ -16,8 +18,9 @@ auto main() -> int {
 
   auto view = registry.create_view<data>();
 
-  for (auto& [entity, data] : view) {
-    std::cout << data->value << '\n';
+  for (const auto& entity : view) {
+    auto& data_component = view.get<data>(entity);
+    fmt::print("{}", data_component.value);
   }
 
   return 0;

@@ -4,9 +4,19 @@
 
 namespace ecs {
 
-template<component Component>
+template<typename Component>
 auto scene::node::get_component() -> component_handle<Component> {
   return _scene->_registry.get_component<Component>(_entity);
+}
+
+template<typename Component, typename... Args>
+auto scene::node::add_component(Args&&... args) -> component_handle<Component> {
+  return _scene->_registry.add_component<Component, Args...>(_entity, std::forward<Args>(args)...);
+}
+
+template<typename... Components>
+auto scene::create_view() -> decltype(auto) {
+  return _registry.create_view<Components...>();
 }
 
 template<typename Type, typename... Args>
