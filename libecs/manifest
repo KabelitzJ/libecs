@@ -5,5 +5,7 @@ project: ecs
 summary: ecs C++ library
 license: MIT
 description-file: README.md
-depends: * build2 >= 0.15.0
-depends: * bpkg >= 0.15.0
+
+# Build2 dependencies
+depends: * build2 ^0.15.0
+depends: * bpkg ^0.15.0
