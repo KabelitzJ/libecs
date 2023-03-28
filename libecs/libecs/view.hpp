@@ -242,7 +242,7 @@ class basic_view {
   template<typename Type>
   inline static constexpr auto index_of = type_list_index_v<std::remove_const_t<Type>, type_list<typename Containers::value_type...>>; 
 
-  template<entity_like Entity, allocator_for<Entity> Allocator>
+  template<typename Entity, allocator_for<Entity> Allocator>
   friend class basic_registry;
 
 public:
@@ -318,7 +318,7 @@ private:
 template<typename Container>
 class basic_view<Container> {
 
-  template<entity_like Entity, allocator_for<Entity> Allocator>
+  template<typename Entity, allocator_for<Entity> Allocator>
   friend class basic_registry;
 
 public:

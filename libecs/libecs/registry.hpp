@@ -19,7 +19,20 @@
 
 namespace ecs {
 
-template<entity_like Entity, allocator_for<Entity> Allocator = std::allocator<Entity>>
+template<typename To, typename From>
+struct constness_as {
+  using type = std::remove_const_t<To>;
+};
+
+template<typename To, typename From>
+struct constness_as<To, const From> {
+  using type = const To;
+};
+
+template<typename To, typename From>
+using constness_as_t = typename constness_as<To, From>::type;
+
+template<typename Entity, allocator_for<Entity> Allocator = std::allocator<Entity>>
 class basic_registry {
 
   using allocator_traits = std::allocator_traits<Allocator>;
@@ -32,16 +45,13 @@ class basic_registry {
   using basic_storage_type = sparse_set<Entity, Allocator>;
 
   template<typename Type>
-  using storage_type = storage<Entity, std::remove_cvref_t<Type>, rebound_allocator_t<Allocator, std::remove_cvref_t<Type>>>;
+  using storage_type = constness_as_t<storage<Entity, std::remove_const_t<Type>, rebound_allocator_t<Allocator, std::remove_const_t<Type>>>, Type>;
 
 public:
 
   using entity_type = Entity;
   using allocator_type = Allocator;
   using size_type = std::size_t;
-
-  template<typename... Components>
-  using view_type = basic_view<storage_type<Components>...>;
 
   basic_registry() = default;
 
@@ -111,7 +121,7 @@ public:
 
   template<typename Component>
   auto has_component(const entity_type& entity) const -> bool {
-    if (const auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
+    if (const auto storage = _try_get_storage<std::remove_const_t<Component>>(); storage) {
       return storage->get().contains(entity);
     }
 
@@ -120,14 +130,14 @@ public:
 
   template<typename Component, typename... Args>
   auto add_component(const entity_type& entity, Args&&... args) -> component_handle<Component> {
-    auto& storage = _get_or_create_storage<std::remove_cvref_t<Component>>();
+    auto& storage = _get_or_create_storage<std::remove_const_t<Component>>();
 
     return storage.add(entity, std::forward<Args>(args)...);
   }
 
   template<typename Component>
   auto get_component(const entity_type& entity) const -> component_handle<const Component> {
-    if (const auto component = try_get_component<std::remove_cvref_t<Component>>(entity); component) {
+    if (const auto component = try_get_component<std::remove_const_t<Component>>(entity); component) {
       return *component;
     }
 
@@ -136,7 +146,7 @@ public:
 
   template<typename Component>
   auto get_component(const entity_type& entity) -> component_handle<Component> {
-    if (auto component = try_get_component<std::remove_cvref_t<Component>>(entity); component) {
+    if (auto component = try_get_component<std::remove_const_t<Component>>(entity); component) {
       return *component;
     }
 
@@ -145,7 +155,7 @@ public:
 
   template<typename Component>
   auto try_get_component(const entity_type& entity) const -> component_handle<const Component> {
-    if (const auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
+    if (const auto storage = _try_get_storage<std::remove_const_t<Component>>(); storage) {
       if (auto entry = storage->get().find(entity); entry != storage->get().cend()) {
         return *entry;
       }
@@ -156,7 +166,7 @@ public:
 
   template<typename Component>
   auto try_get_component(const entity_type& entity) -> component_handle<Component> {
-    if (auto storage = _try_get_storage<std::remove_cvref_t<Component>>(); storage) {
+    if (auto storage = _try_get_storage<std::remove_const_t<Component>>(); storage) {
       if (auto entry = storage->get().find(entity); entry != storage->get().end()) {
         return *entry;
       }
@@ -166,19 +176,16 @@ public:
   }
 
   template<typename... Components>
-  auto create_view() -> view_type<Components...> {
-    return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
+  auto create_view() -> basic_view<storage_type<Components>...> {
+    return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
 
   template<typename... Components>
-  auto create_view() const -> view_type<Components...> {
-    return view_type<Components...>{_get_or_create_storage<std::remove_cvref_t<Components>>()...};
+  auto create_view() const -> basic_view<storage_type<const Components>...> {
+    return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
 
 private:
-
-  template<typename From, typename To>
-  using constness_as_t = std::conditional_t<std::is_const_v<From>, const To, To>;
 
   template<typename Component>
   auto _get_or_create_storage() -> storage_type<Component>& {

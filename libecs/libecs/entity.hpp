@@ -64,6 +64,12 @@ struct basic_entity_traits<Type> : basic_entity_traits<typename Type::entity_typ
   using entity_type = Type;
 };
 
+template<typename Type, typename = void>
+constexpr auto is_complete_v = false;
+
+template<typename Type>
+constexpr auto is_complete_v<Type, decltype(sizeof(Type), void())> = true;
+
 /**
  * @brief Entity traits
  *
@@ -138,12 +144,10 @@ struct entity_traits : basic_entity_traits<Type> {
 };
 
 template<typename Type>
-concept entity_like = !std::is_void_v<basic_entity_traits<Type>> && (sizeof(basic_entity_traits<Type>) > 0);
-
-template<entity_like Type>
+requires (is_complete_v<basic_entity_traits<Type>>)
 class basic_entity {
 
-  template<entity_like Entity, allocator_for<Entity> Allocator>
+  template<typename Entity, allocator_for<Entity> Allocator>
   friend class basic_registry;
 
   friend std::hash<basic_entity<Type>>;
@@ -202,13 +206,13 @@ private:
 }; // class basic_entity
 
 
-namespace detail {
+// namespace detail {
 
-enum class entity_tag : std::uint32_t { };
+// enum class entity_tag : std::uint32_t { };
 
-} // namespace detail
+// } // namespace detail
 
-using entity = basic_entity<detail::entity_tag>;
+using entity = basic_entity<std::uint32_t>;
 
 } // namespace ecs
 
