@@ -56,6 +56,8 @@ auto main() -> int {
     fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
   }
 
+  fmt::print("\n");
+
   auto camera = scene.create_node();
   camera.add_script<scripts::camera_controller>();
   

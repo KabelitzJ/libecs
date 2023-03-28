@@ -19,8 +19,7 @@ public:
   }
 
   auto on_update(std::float_t delta_time) -> void {
-    std::cout << "player_controller::on_update(" << delta_time << ")\n";
-    std::cout << "(" << _position->x << ", " << _position->y << ", " << _position->z << ")\n";
+    std::cout << "player_controller::on_update(" << delta_time << ") -> (" << _position->x << ", " << _position->y << ", " << _position->z << ")\n";
   }
 
 private:

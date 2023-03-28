@@ -60,7 +60,7 @@ public:
   basic_registry(basic_registry&& other) noexcept
   : _entities{std::move(other._entities)},
     _free_entities{std::move(other._free_entities)},
-    _component_storages{std::move(other._component_storages)} { }
+    _storages{std::move(other._storages)} { }
 
   ~basic_registry() {
     clear();
@@ -72,14 +72,14 @@ public:
     if (this != &other) {
       _entities = std::move(other._entities);
       _free_entities = std::move(other._free_entities);
-      _component_storages = std::move(other._component_storages);
+      _storages = std::move(other._storages);
     }
 
     return *this;
   }
 
   auto clear() -> void {
-    for (auto& [key, storage] : _component_storages) {
+    for (auto& [key, storage] : _storages) {
       storage->clear();
     }
 
@@ -105,7 +105,7 @@ public:
 
   auto destroy_entity(const entity_type& entity) -> void {
     // [NOTE] : Clear out all components that are owned by this entity
-    for (auto& [type, storage] : _component_storages) {
+    for (auto& [type, storage] : _storages) {
       storage->remove(entity);
     }
 
@@ -188,14 +188,28 @@ public:
 private:
 
   template<typename Component>
+  auto _get_or_create_storage() const -> const storage_type<Component>& {
+    const auto type = std::type_index{typeid(Component)};
+
+    if (auto entry = _storages.find(type); entry != _storages.cend()) {
+      return static_cast<const storage_type<Component>&>(*entry->second);
+    }
+
+    // [Note]: We use an empty storage placeholder in const context until we find it in the available storages
+    static const auto placeholder = storage_type<Component>{};
+
+    return placeholder;
+  }
+
+  template<typename Component>
   auto _get_or_create_storage() -> storage_type<Component>& {
     const auto type = std::type_index{typeid(Component)};
 
-    if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
+    if (auto entry = _storages.find(type); entry != _storages.end()) {
       return static_cast<storage_type<Component>&>(*entry->second);
     }
 
-    auto entry = _component_storages.insert({type, std::make_unique<storage_type<Component>>()}).first;
+    auto entry = _storages.insert({type, std::make_unique<storage_type<Component>>()}).first;
 
     return static_cast<storage_type<Component>&>(*entry->second);
   }
@@ -204,8 +218,8 @@ private:
   auto _try_get_storage() const -> std::optional<std::reference_wrapper<const storage_type<Component>>> {
     const auto type = std::type_index{typeid(Component)};
 
-    if (auto entry = _component_storages.find(type); entry != _component_storages.cend()) {
-      return std::cref(static_cast<storage_type<Component>&>(*entry->second));
+    if (auto entry = _storages.find(type); entry != _storages.cend()) {
+      return std::cref(static_cast<const storage_type<Component>&>(*entry->second));
     }
 
     return std::nullopt;
@@ -215,7 +229,7 @@ private:
   auto _try_get_storage() -> std::optional<std::reference_wrapper<storage_type<Component>>> {
     const auto type = std::type_index{typeid(Component)};
 
-    if (auto entry = _component_storages.find(type); entry != _component_storages.end()) {
+    if (auto entry = _storages.find(type); entry != _storages.end()) {
       return std::ref(static_cast<storage_type<Component>&>(*entry->second));
     }
 
@@ -225,7 +239,7 @@ private:
   entity_storage_type _entities;
   free_list_type _free_entities;
 
-  std::unordered_map<std::type_index, std::unique_ptr<basic_storage_type>> _component_storages;
+  std::unordered_map<std::type_index, std::unique_ptr<basic_storage_type>> _storages;
 
 };
 

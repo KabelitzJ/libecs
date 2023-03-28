@@ -86,9 +86,7 @@ public:
   }
 
   auto begin() const -> const_iterator {
-    const auto itr = _dense.begin();
-    const auto value = *itr;
-    return itr;
+    return _dense.begin();
   }
 
   auto cbegin() const -> const_iterator {
@@ -100,9 +98,7 @@ public:
   }
 
   auto end() const -> const_iterator {
-    const auto itr = _dense.end();
-    const auto value = *itr;
-    return itr;
+    return _dense.end();
   }
 
   auto cend() const -> const_iterator {

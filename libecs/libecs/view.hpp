@@ -210,7 +210,7 @@ struct type_list_index<Type, type_list<First, Other...>> {
 
 template<typename Type, typename... Other>
 struct type_list_index<Type, type_list<Type, Other...>> {
-  static_assert(type_list_index<Type, type_list<Other...>>::value == sizeof...(Other), "Non-unique type");
+  static_assert(type_list_index<Type, type_list<Other...>>::value == sizeof...(Other), "Duplicate type in type list");
 
   using value_type = std::size_t;
 
@@ -238,6 +238,8 @@ class basic_view {
 
   using underlying_type = std::common_type_t<typename Containers::key_type...>;
   using basic_common_type = std::common_type_t<typename Containers::base_type...>;
+
+  using container_storage_type = std::tuple<Containers*...>;
 
   template<typename Type>
   inline static constexpr auto index_of = type_list_index_v<std::remove_const_t<Type>, type_list<typename Containers::value_type...>>; 
@@ -273,6 +275,7 @@ public:
   }
 
   template<std::size_t Index>
+  requires (Index < std::tuple_size_v<container_storage_type>)
   auto storage() const noexcept -> decltype(auto) {
     return *std::get<Index>(_containers);
   }
@@ -310,7 +313,7 @@ private:
     return result;
   }
 
-  std::tuple<Containers*...> _containers;
+  container_storage_type _containers;
   const base_type* _view;
 
 }; // class basic_view

@@ -10,8 +10,7 @@ auto camera_controller::on_create() -> void {
 }
 
 auto camera_controller::on_update(std::float_t delta_time) -> void {
-  std::cout << "camera_controller::on_update(" << delta_time << ")\n";
-  std::cout << "(" << _position->x << ", " << _position->y << ", " << _position->z << ")\n";
+  std::cout << "camera_controller::on_update(" << delta_time << ") -> (" << _position->x << ", " << _position->y << ", " << _position->z << ")\n";
 }
 
 } // namespace scripts
