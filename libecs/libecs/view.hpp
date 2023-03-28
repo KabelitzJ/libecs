@@ -9,6 +9,8 @@
 
 #include <libecs/memory.hpp>
 #include <libecs/component_handle.hpp>
+#include <libecs/type_list.hpp>
+#include <libecs/iterable_adaptor.hpp>
 
 namespace ecs {
 
@@ -68,7 +70,7 @@ public:
 private:
 
   auto _is_valid() const noexcept -> bool {
-    return /*(Size != 0u) &&*/ std::apply([entity = *_current](const auto*... container){ return (container->contains(entity) && ...); }, _containers);
+    return (Size != 0u) && std::apply([entity = *_current](const auto*... container){ return (container->contains(entity) && ...); }, _containers);
   }
 
   iterator_type _current;
@@ -81,8 +83,8 @@ template<typename Type>
 struct input_iterator_pointer final {
 
   using value_type = Type;
-  using pointer = Type *;
-  using reference = Type &;
+  using pointer = value_type*;
+  using reference = value_type&;
 
   constexpr input_iterator_pointer(value_type&& value) noexcept(std::is_nothrow_move_constructible_v<value_type>)
   : _value{std::move(value)} {}
@@ -100,7 +102,7 @@ private:
 
   value_type _value;
 
-};
+}; // struct input_iterator_pointer
 
 template<typename Iterator, typename... Types>
 class extended_view_iterator final {
@@ -158,80 +160,6 @@ private:
 }; // class extended_view_iterator
 
 } // namespace detail
-
-template<typename Iterator, std::sentinel_for<Iterator> Sentinel = Iterator>
-class iterable_adaptor final {
-
-public:
-
-  using value_type = typename std::iterator_traits<Iterator>::value_type;
-  using iterator = Iterator;
-  using sentinel = Sentinel;
-
-  constexpr iterable_adaptor() noexcept(std::is_nothrow_default_constructible_v<iterator> && std::is_nothrow_default_constructible_v<sentinel>)
-  : _begin{},
-    _end{} {}
-
-  constexpr iterable_adaptor(iterator begin, sentinel end) noexcept(std::is_nothrow_move_constructible_v<iterator> && std::is_nothrow_move_constructible_v<sentinel>)
-  : _begin{std::move(begin)},
-    _end{std::move(end)} {}
-
-  constexpr auto begin() const noexcept -> iterator {
-    return _begin;
-  }
-
-  constexpr auto end() const noexcept -> sentinel {
-    return _end;
-  }
-
-private:
-
-  iterator _begin;
-  sentinel _end;
-
-}; // class iterable_adaptor
-
-template<typename... Type>
-struct type_list {
-  using type = type_list;
-
-  static constexpr auto size = sizeof...(Type);
-}; // struct type_list
-
-template<typename, typename>
-struct type_list_index;
-
-template<typename Type, typename First, typename... Other>
-struct type_list_index<Type, type_list<First, Other...>> {
-  using value_type = std::size_t;
-
-  static constexpr auto value = 1u + type_list_index<Type, type_list<Other...>>::value;
-};
-
-template<typename Type, typename... Other>
-struct type_list_index<Type, type_list<Type, Other...>> {
-  static_assert(type_list_index<Type, type_list<Other...>>::value == sizeof...(Other), "Duplicate type in type list");
-
-  using value_type = std::size_t;
-
-  static constexpr value_type value = 0u;
-};
-
-template<typename Type>
-struct type_list_index<Type, type_list<>> {
-  using value_type = std::size_t;
-
-  static constexpr value_type value = 0u;
-}; // struct type_list_index
-
-template<typename Type, typename List>
-inline constexpr std::size_t type_list_index_v = type_list_index<Type, List>::value;
-
-template<typename... Types>
-using get_t = type_list<Types...>;
-
-template<typename... Types>
-inline constexpr get_t<Types...> get{};
 
 template<typename... Containers>
 class basic_view {

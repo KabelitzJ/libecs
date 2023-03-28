@@ -47,13 +47,23 @@ auto main() -> int {
   auto n3 = scene.create_node();
   n3.add_component<std::uint32_t>(std::uint32_t{3u});
 
-  auto view = scene.create_view<const std::uint32_t, const ecs::vector3>();
+  auto view1 = scene.create_view<const std::uint32_t, const ecs::vector3>();
 
-  for (const auto& entity : view) {
-    const auto& i = view.get<const std::uint32_t>(entity);
-    const auto& v = view.get<const ecs::vector3>(entity);
+  for (const auto& entity : view1) {
+    const auto& i = view1.get<const std::uint32_t>(entity);
+    const auto& v = view1.get<const ecs::vector3>(entity);
 
     fmt::print("{} : [{} {} {}]\n", i, v.x, v.y, v.z);
+  }
+
+  fmt::print("\n");
+
+  auto view2 = scene.create_view<const ecs::vector3>();
+
+  for (const auto& entity : view2) {
+    const auto& v = view2.get<const ecs::vector3>(entity);
+
+    fmt::print("[{} {} {}]\n", v.x, v.y, v.z);
   }
 
   fmt::print("\n");
