@@ -26,7 +26,7 @@ struct constness_as {
 
 template<typename To, typename From>
 struct constness_as<To, const From> {
-  using type = const To;
+  using type = std::add_const_t<To>;
 };
 
 template<typename To, typename From>
