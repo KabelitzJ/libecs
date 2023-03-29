@@ -36,7 +36,9 @@ public:
 
   public:
 
-    ~node() = default;
+    ~node() {
+      _scene->_registry.destroy_entity(_entity);
+    }
 
     template<typename Component>
     auto get_component() -> component_handle<Component>;
@@ -50,19 +52,19 @@ public:
 
   private:
 
-    node(scene* scene, ecs::entity entity)
-    : _scene{scene}, _entity{entity} { }
+    node(scene* scene)
+    : _scene{scene}, _entity{scene->_registry.create_entity()} { }
 
     scene* _scene;
-    ecs::entity _entity;
+    ecs::entity _entity{null_entity};
 
   }; // class node
 
   auto create_node(const vector3& position = {0.0f, 0.0f, 0.0f}) -> node {
-    auto entity = _registry.create_entity();
-    _registry.add_component<vector3>(entity, position);
+    auto new_node = node{this};
+    new_node.add_component<vector3>(position);
 
-    return node{this, entity};
+    return new_node;
   }
 
   template<typename... Components>

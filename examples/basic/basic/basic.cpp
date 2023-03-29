@@ -26,9 +26,6 @@
 
 #include <libecs/ecs.hpp>
 
-#include <mono/jit/jit.h>
-#include <mono/metadata/assembly.h>
-
 #include <basic/delegate.hpp>
 #include <basic/logger.hpp>
 

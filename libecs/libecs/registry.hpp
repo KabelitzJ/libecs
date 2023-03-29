@@ -47,9 +47,11 @@ class basic_registry {
   template<typename Type>
   using storage_type = constness_as_t<storage<Entity, std::remove_const_t<Type>, rebound_allocator_t<Allocator, std::remove_const_t<Type>>>, Type>;
 
+  using entity_traits = ecs::entity_traits<Entity>;
+
 public:
 
-  using entity_type = Entity;
+  using entity_type = entity_traits::entity_type;
   using allocator_type = Allocator;
   using size_type = std::size_t;
 
@@ -95,9 +97,9 @@ public:
       return _entities.at(index);
     }
 
-    const auto id = static_cast<entity_type::id_type>(_entities.size());
+    const auto id = static_cast<entity_traits::id_type>(_entities.size());
 
-    auto new_entity = entity{id, static_cast<entity_type::version_type>(0)};
+    auto new_entity = entity_traits::construct(id);
 
     _entities.push_back(new_entity);
     return new_entity;
@@ -109,9 +111,9 @@ public:
       storage->remove(entity);
     }
 
-    auto index = static_cast<std::size_t>(entity._id());
+    auto index = static_cast<std::size_t>(entity_traits::to_id(entity));
     _free_entities.push_back(index);
-    _entities.at(index)._increment_version();
+    _entities.at(index) = entity_traits::next(_entities.at(index));
   }
 
   auto is_valid_entity(const entity_type& entity) -> bool {
