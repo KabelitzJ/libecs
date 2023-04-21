@@ -1,7 +1,8 @@
 dependencies =
 import dependencies += libecs%liba{ecs}
-import dependencies += sol2%lib{sol2}
+import dependencies += sol2%liba{sol2}
 import dependencies += fmt%liba{fmt}
+import dependencies += yaml-cpp%liba{yaml-cpp}
 
 exe{basic}: {hxx ixx txx cxx}{**} ../assets/scripts/lib{scripts} $dependencies
 
