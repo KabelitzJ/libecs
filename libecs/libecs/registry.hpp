@@ -178,11 +178,13 @@ public:
   }
 
   template<typename... Components>
+  requires (sizeof...(Components) > 0)
   auto create_view() -> basic_view<storage_type<Components>...> {
     return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
 
   template<typename... Components>
+  requires (sizeof...(Components) > 0)
   auto create_view() const -> basic_view<storage_type<const Components>...> {
     return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
