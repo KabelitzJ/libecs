@@ -32,6 +32,14 @@ struct constness_as<To, const From> {
 template<typename To, typename From>
 using constness_as_t = typename constness_as<To, From>::type;
 
+template<typename... Types>
+struct variadic_template_size {
+  inline static constexpr auto value = sizeof...(Types);
+}; // struct variadic_template_size
+
+template<typename... Types>
+constexpr auto variadic_template_size_v = variadic_template_size<Types...>::value;
+
 template<typename Entity, allocator_for<Entity> Allocator = std::allocator<Entity>>
 class basic_registry {
 
@@ -178,13 +186,13 @@ public:
   }
 
   template<typename... Components>
-  requires (sizeof...(Components) > 0)
+  requires (variadic_template_size_v<Components...> != 0)
   auto create_view() -> basic_view<storage_type<Components>...> {
     return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
 
   template<typename... Components>
-  requires (sizeof...(Components) > 0)
+  requires (variadic_template_size_v<Components...> != 0)
   auto create_view() const -> basic_view<storage_type<const Components>...> {
     return {_get_or_create_storage<std::remove_const_t<Components>>()...};
   }
