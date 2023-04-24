@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <typeindex>
 #include <optional>
 #include <algorithm>
@@ -40,6 +41,67 @@ struct variadic_template_size {
 template<typename... Types>
 constexpr auto variadic_template_size_v = variadic_template_size<Types...>::value;
 
+template<typename Entity, typename EntityList, typename FreeList> 
+class registry_iterator {
+
+  using iterator_type = EntityList::const_iterator;
+
+  using entity_traits = ecs::entity_traits<Entity>;
+
+
+public:
+
+  using value_type = typename iterator_type::value_type;
+  using pointer = typename iterator_type::pointer;
+  using reference = typename iterator_type::reference;
+  using difference_type = typename iterator_type::difference_type;
+  using iterator_category = std::forward_iterator_tag;
+
+  registry_iterator(iterator_type current, iterator_type end, FreeList& free_entities)
+  : _current{current},
+    _end{end},
+    _free_entities{std::addressof(free_entities)} {
+    while(_current != _end && !_is_valid()) {
+      ++_current;
+    }
+  }
+
+  auto operator++() noexcept -> registry_iterator& {
+    while(++_current != _end && !_is_valid()) {}
+    return *this;
+  }
+
+  auto operator++(int) noexcept -> registry_iterator {
+    auto copy = *this;
+    ++(*this);
+    return copy;
+  }
+
+  auto operator->() const noexcept -> pointer {
+    return &*_current;
+  }
+
+  auto operator*() const noexcept -> reference {
+    return *(operator->());
+  }
+
+  template<typename LhsEntity, typename LhsEntityList, typename LhsFreeList, typename RhsEntity,  typename RhsEntityList, typename RhsFreeList>
+  friend auto operator==(const registry_iterator<LhsEntity, LhsEntityList, LhsFreeList>& lhs, const registry_iterator<RhsEntity, RhsEntityList, RhsFreeList>& rhs) noexcept -> bool {
+    return lhs._current == rhs._current;
+  } 
+
+private:
+
+  auto _is_valid() const noexcept -> bool {
+    return !_free_entities->contains(entity_traits::to_id(*_current));
+  }
+
+  iterator_type _current;
+  iterator_type _end;
+  const FreeList* _free_entities;
+
+}; // class registry_iterator
+
 template<typename Entity, allocator_for<Entity> Allocator = std::allocator<Entity>>
 class basic_registry {
 
@@ -48,7 +110,7 @@ class basic_registry {
   static_assert(allocator_for<Allocator, Entity>, "Invalid allocator type");
 
   using entity_storage_type = std::vector<Entity, Allocator>;
-  using free_list_type = std::vector<std::size_t, rebound_allocator_t<Allocator, std::size_t>>;
+  using free_list_type = std::unordered_set<std::size_t, std::hash<std::size_t>, std::equal_to<std::size_t>, rebound_allocator_t<Allocator, std::size_t>>;
 
   using basic_storage_type = sparse_set<Entity, Allocator>;
 
@@ -62,6 +124,7 @@ public:
   using entity_type = entity_traits::entity_type;
   using allocator_type = Allocator;
   using size_type = std::size_t;
+  using iterator = registry_iterator<entity_type, entity_storage_type, free_list_type>;
 
   basic_registry() = default;
 
@@ -88,6 +151,14 @@ public:
     return *this;
   }
 
+  auto begin() -> iterator {
+    return iterator{_entities.begin(), _entities.end(), _free_entities};
+  }
+
+  auto end() -> iterator {
+    return iterator{_entities.end(), _entities.end(), _free_entities};
+  }
+
   auto clear() -> void {
     for (auto& [key, storage] : _storages) {
       storage->clear();
@@ -99,8 +170,8 @@ public:
 
   auto create_entity() -> entity_type {
     if (!_free_entities.empty()) {
-      auto index = _free_entities.back();
-      _free_entities.pop_back();
+      auto index = *_free_entities.begin();
+      _free_entities.erase(_free_entities.begin());
 
       return _entities.at(index);
     }
@@ -120,7 +191,7 @@ public:
     }
 
     auto index = static_cast<std::size_t>(entity_traits::to_id(entity));
-    _free_entities.push_back(index);
+    _free_entities.insert(index);
     _entities.at(index) = entity_traits::next(_entities.at(index));
   }
 
@@ -145,6 +216,16 @@ public:
     return storage.add(entity, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Gets the component assigned to an entity
+   * 
+   * @tparam Component Type of the component
+   * @param entity The entity the component is assigned to
+   * 
+   * @throws std::runtime_error when the entity does not have a component of the given type assigned to itself 
+   * 
+   * @return The component assigned to the entity
+   */
   template<typename Component>
   auto get_component(const entity_type& entity) const -> component_handle<const Component> {
     if (const auto component = try_get_component<std::remove_const_t<Component>>(entity); component) {
@@ -253,7 +334,7 @@ private:
 
   std::unordered_map<std::type_index, std::unique_ptr<basic_storage_type>> _storages;
 
-};
+}; // class basic_registry
 
 using registry = basic_registry<entity>;
 

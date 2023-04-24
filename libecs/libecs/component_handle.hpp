@@ -28,11 +28,31 @@ public:
     return _ptr;
   }
 
+  auto operator->() const -> const_pointer {
+    return _ptr;
+  }
+
   auto operator*() -> reference {
     return *_ptr;
   }
 
+  auto operator*() const -> const_reference {
+    return *_ptr;
+  }
+
   operator bool() const {
+    return _ptr != nullptr;
+  }
+
+  auto value() -> reference {
+    return *_ptr;
+  }
+
+  auto value() const -> const_reference {
+    return *_ptr;
+  }
+
+  auto valid() const -> bool {
     return _ptr != nullptr;
   }
 

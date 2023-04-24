@@ -187,12 +187,16 @@ auto main() -> int {
 
   auto scene = YAML::Node{};
 
-  for (auto [entity, tag, transform, rigidbody] : v.each()) {
+  for (auto entity : registry) {
+    const auto tag_component = registry.get_component<const tag>(entity);
+    const auto transform_component = registry.get_component<const transform>(entity);
+    const auto rigidbody_component = registry.get_component<const rigidbody>(entity);
+
     auto node = YAML::Node{};
 
-    node["tag"] = tag;
-    node["transform"] = transform;
-    node["rigidbody"] = rigidbody;
+    node["tag"] = *tag_component;
+    node["transform"] = *transform_component;
+    node["rigidbody"] = *rigidbody_component;
 
     scene["entities"].push_back(node);
   }
@@ -206,6 +210,10 @@ auto main() -> int {
   auto file = std::ofstream{"/home/jxk10011/development/libecs/examples/basic/basic/player.yaml"};
 
   file.write(emitter.c_str(), emitter.size());
+
+  registry.destroy_entity(e1);
+  registry.destroy_entity(e2);
+  registry.destroy_entity(e3);
 
   return 0;
 }
